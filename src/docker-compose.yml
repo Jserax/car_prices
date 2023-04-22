@@ -1,0 +1,103 @@
+version: '3.8'
+x-airflow-common:
+  &airflow-common
+  build: ./docker-airflow
+  env_file:
+    - .env
+  environment:
+    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/postgres
+    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/postgres
+    - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+  volumes:
+    - "./dags:/opt/airflow/dags"
+    - "/var/run/docker.sock:/var/run/docker.sock"
+  networks:
+    - postgres
+    - minio
+  depends_on:
+    - postgres
+
+services:  
+    postgresql:
+        restart: always
+        image: postgres:13
+        container_name: postgres
+        env_file:
+            - .env
+        ports:
+            - "5434:5432" 
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        networks:
+            - postgres
+
+    minio:
+        restart: always
+        image: minio/minio:latest
+        container_name: minio
+        env_file:
+            - .env
+        ports:
+            - "9000:9000"
+            - "9001:9001"
+        environment:
+            - MINIO_ROOT_USER=${ACCESS_KEY}
+            - MINIO_ROOT_PASSWORD=${SECRET_KEY}
+        command: server /data --console-address ":9001"
+        volumes:
+            - minio_data:/data
+        networks:
+            - minio
+
+    mlflow:
+        image: "ghcr.io/mlflow/mlflow:v2.3.0"
+        container_name: mlflow_server
+        env_file:
+            - .env
+        environment:
+            - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
+            - AWS_SECRET_ACCESS_KEY=${SECRET_KEY}
+            - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+        ports:
+            - "5000:${MLFLOW_PORT}"
+        command: mlflow server -w 1 --backend-store-uri postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@postgresql/$POSTGRES_DB --default-artifact-root s3://mlflow --host 0.0.0.0 --port $MLFLOW_PORT      
+        networks:
+            - postgres 
+            - minio
+        depends_on:
+            - postgresql
+            - minio
+
+
+    airflow-webserver:
+        << : *airflow-common
+        restart: always
+        container_name: airflow_webserver
+        ports:
+            - 8080:8080
+        command: 
+            - /bin/bash
+            - -c
+            - |
+                airflow db init
+                airflow users create -r Admin -u admin -f admin -l admin -e admin@airflow.org -p admin
+                airflow webserver -w 1 
+
+    airflow-scheduler:
+        << : *airflow-common
+        restart: always 
+        container_name: airflow_scheduler
+        command: airflow scheduler
+        
+
+networks:
+  postgres:
+    driver: overlay
+  minio:
+    driver: overlay  
+volumes:
+    postgres_data: 
+    minio_data: 
+    

@@ -1,0 +1,5 @@
+service: service:svc
+include:
+  - service.py
+python:
+  requirements:
