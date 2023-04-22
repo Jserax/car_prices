@@ -35,7 +35,7 @@ CAT_COLS = ['brand', 'name', 'bodyType', 'color',
             'fuelType', 'transmission', 'location']
 NUM_COLS = ['year', 'mileage', 'power', 'engineDisplacement']
 TARGET = 'price'
-MLFLOW_URI = f"mlflow:{os.environ['MLFLOW_PORT']}"
+MLFLOW_URI = "mlflow:5000"
 EXPERIMENT_NAME = 'car_price'
 
 
