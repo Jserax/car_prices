@@ -25,7 +25,7 @@ def db_init():
 
     client.make_bucket('data')
     client.make_bucket('mlflow')
-    df = pd.read_csv('data/raw/car_prices.csv')
+    df = pd.read_csv('data/car_prices.csv')
 
     timestamp = dt.datetime.now().timestamp()
     df.iloc[:750000]['timestamp'] = timestamp
