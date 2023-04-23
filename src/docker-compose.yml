@@ -1,7 +1,7 @@
 version: '3.8'
 x-airflow-common:
   &airflow-common
-  image: skyraxer/docker-airflow:latest
+  image: skyraxer/airflow:latest
   env_file:
     - .env
   environment:
@@ -21,7 +21,7 @@ x-airflow-common:
 services:  
     postgres:
         restart: always
-        build: ./postgres
+        image: skyraxer/postgres:latest
         container_name: postgres
         environment:
             - POSTGRES_DB=postgres
@@ -31,7 +31,6 @@ services:
             - "5432:5432" 
         volumes:
             - postgres_data:/var/lib/postgresql/data
-            - ./docker-airflow/init_airflow_db.sql:/docker-entrypoint-initdb.d/init_airflow_db.sql
         networks:
             - postgres
 

@@ -25,9 +25,9 @@ def make_requests() -> None:
     df.apply(make_request)
 
 
-with DAG(dag_id='prepare_data',
+with DAG(dag_id='make_requests',
          start_date=dt.datetime(2000, 1, 1),
-         description="Data preparation for model training",
+         description="make request to model",
          default_args={
             "depends_on_past": False,
             "retries": 1},
